@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 每日热点推送脚本
-使用 tophub.today API 抓取热榜，推送到飞书群
+使用 imsyy/DailyHotApi 抓取热榜，推送到飞书群
+API 部署在 Vercel，全球可访问
 """
 
 import os
@@ -11,13 +12,14 @@ from datetime import datetime
 
 FEISHU_WEBHOOK = os.environ.get('FEISHU_WEBHOOK_URL', '')
 
-# 使用 tophub.today 的 API（更稳定）
+# 使用 DailyHotApi (https://github.com/imsyy/DailyHotApi)
+# 这个 API 部署在 Vercel 上，全球可访问
 HOT_APIS = {
-    '微博热搜': 'https://api.tophub.today/v2/GetAllInfoGzip?id=KqndgxeLl9',
-    '知乎热榜': 'https://api.tophub.today/v2/GetAllInfoGzip?id=mproPpoq6O',
-    '百度热搜': 'https://api.tophub.today/v2/GetAllInfoGzip?id=Jb0vmloB1G',
-    '抖音热榜': 'https://api.tophub.today/v2/GetAllInfoGzip?id=DpQvNABoNE',
-    '今日头条': 'https://api.tophub.today/v2/GetAllInfoGzip?id=Om4WjxvxME',
+    '微博热搜': 'https://dailyhot.hkg1.zeabur.app/weibo',
+    '知乎热榜': 'https://dailyhot.hkg1.zeabur.app/zhihu',
+    '百度热搜': 'https://dailyhot.hkg1.zeabur.app/baidu',
+    '抖音热榜': 'https://dailyhot.hkg1.zeabur.app/douyin',
+    '今日头条': 'https://dailyhot.hkg1.zeabur.app/toutiao',
 }
 
 def fetch_hot_list(name, url, limit=10):
@@ -26,12 +28,9 @@ def fetch_hot_list(name, url, limit=10):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
         data = resp.json()
-        if data.get('Code') == 0:
-            items = data.get('Data', {}).get('Cards', [])
-            if items and len(items) > 0:
-                card = items[0]
-                news_list = card.get('Content', [])[:limit]
-                return [{'title': item.get('Title', ''), 'url': item.get('Url', '')} for item in news_list]
+        if data.get('code') == 200:
+            items = data.get('data', [])[:limit]
+            return [{'title': item.get('title', ''), 'url': item.get('url', item.get('mobileUrl', ''))} for item in items]
     except Exception as e:
         print(f"抓取 {name} 失败: {e}")
     return []
